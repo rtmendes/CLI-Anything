@@ -56,7 +56,7 @@ CLI 是人类和 AI Agent 共通的万能接口：
 
 - **Python 3.10+**
 - 目标软件已安装（如 GIMP、Blender、LibreOffice 或你自己的应用）
-- 支持的 AI 编程工具之一：[Claude Code](#-claude-code) | [OpenCode](#-opencode) | [更多平台](#-更多平台即将支持)
+- 支持的 AI 编程工具之一：[Claude Code](#-claude-code) | [OpenCode](#-opencode) | [Codex](#-codex) | [更多平台](#-更多平台即将支持)
 
 ### 选择你的平台
 
@@ -183,10 +183,45 @@ cp CLI-Anything/cli-anything-plugin/HARNESS.md .opencode/commands/
 </details>
 
 <details>
+<summary><h4 id="-codex">⚡ Codex</h4></summary>
+
+**第一步：安装 Skill**
+
+运行仓库内置的安装脚本：
+
+```bash
+# 克隆仓库
+git clone https://github.com/HKUDS/CLI-Anything.git
+
+# 安装 skill
+bash CLI-Anything/codex-skill/scripts/install.sh
+```
+
+脚本会把 skill 安装到 `$CODEX_HOME/skills/cli-anything`；如果没有设置 `CODEX_HOME`，则默认安装到 `~/.codex/skills/cli-anything`。
+
+安装后重启 Codex，让它重新发现这个 skill。
+
+**第二步：在 Codex 里使用 CLI-Anything**
+
+直接用自然语言描述任务，例如：
+
+```text
+Use CLI-Anything to build a harness for ./gimp
+Use CLI-Anything to refine ./shotcut for picture-in-picture workflows
+Use CLI-Anything to validate ./libreoffice
+```
+
+这个 Codex skill 复用了 Claude Code 插件和 OpenCode 命令所使用的同一套方法论，
+不会改变生成出来的 Python harness 结构。
+
+</details>
+
+<details>
 <summary><h4 id="-更多平台即将支持">🔮 更多平台（即将支持）</h4></summary>
 
 CLI-Anything 的设计是平台无关的，计划支持更多 AI 编程工具：
 
+- **Codex** — 已通过 `codex-skill/` 提供接入
 - **Cursor** — 即将支持
 - **Windsurf** — 即将支持
 - **你喜欢的工具** — 欢迎贡献！参考 `opencode-commands/` 目录的实现。
@@ -532,6 +567,7 @@ cli-anything/
 │   ├── cli-anything-validate.md         # 标准验证
 │   └── cli-anything-list.md             # 列出所有 CLI 工具
 │
+├── 🤖 codex-skill/                      # Codex skill 接入层
 ├── 🎨 gimp/agent-harness/               # GIMP CLI（107 项测试）
 ├── 🧊 blender/agent-harness/            # Blender CLI（208 项测试）
 ├── ✏️ inkscape/agent-harness/            # Inkscape CLI（202 项测试）
@@ -783,4 +819,3 @@ MIT License — 可自由使用、修改和分发。
   <em>感谢访问 ✨ CLI-Anything！</em><br><br>
   <img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.CLI-Anything&style=for-the-badge&color=00d4ff" alt="Views">
 </p>
-
