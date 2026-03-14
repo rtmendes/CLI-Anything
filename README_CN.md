@@ -142,6 +142,8 @@ cp -r CLI-Anything/cli-anything-plugin ~/.claude/plugins/cli-anything
 
 **第一步：安装命令**
 
+**注意：** 请升级到最新 OpenCode，旧版本可能使用不同的命令目录路径。
+
 将 CLI-Anything 命令**和** `HARNESS.md` 复制到 OpenCode 命令目录：
 
 ```bash
@@ -747,6 +749,7 @@ HARNESS.md 是我们通过自动化 CLI 生成让任意软件变得 Agent 可用
 # 克隆仓库
 git clone https://github.com/HKUDS/CLI-Anything.git
 
+# 请确保使用最新 OpenCode，旧版本可能使用不同的命令目录路径
 # 复制命令和 HARNESS.md 到 OpenCode 命令目录
 cp CLI-Anything/opencode-commands/*.md ~/.config/opencode/commands/
 cp CLI-Anything/cli-anything-plugin/HARNESS.md ~/.config/opencode/commands/

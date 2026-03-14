@@ -142,6 +142,8 @@ cp -r CLI-Anything/cli-anything-plugin ~/.claude/plugins/cli-anything
 
 **Step 1: Install the Commands**
 
+**Note:** Please upgrade to the latest OpenCode. Older versions may use a different commands path.
+
 Copy the CLI-Anything commands **and** `HARNESS.md` to your OpenCode commands directory:
 
 ```bash
