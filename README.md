@@ -7,6 +7,8 @@ CLI-Anything: Bridging the Gap Between AI Agents and the World's Software</stron
 
 **🌐 [CLI-Hub](https://hkuds.github.io/CLI-Anything/)**: Explore all community-built CLIs and install with one command at the **[CLI-Hub](https://hkuds.github.io/CLI-Anything/)**. Want to add your own? [Open a PR](https://github.com/HKUDS/CLI-Anything/blob/main/CONTRIBUTING.md) — the hub updates instantly.
 
+**🎬 [See Demos](#-real-world-demos)**: Watch AI agents use generated CLIs to produce real artifacts — diagrams, gameplay, subtitles, and more.
+
 <p align="center">
   <a href="#-quick-start"><img src="https://img.shields.io/badge/Quick_Start-5_min-blue?style=for-the-badge" alt="Quick Start"></a>
   <a href="https://hkuds.github.io/CLI-Anything/"><img src="https://img.shields.io/badge/CLI_Hub-Browse_%26_Install-ff69b4?style=for-the-badge" alt="CLI Hub"></a>
@@ -586,6 +588,64 @@ Each generated CLI includes a `SKILL.md` file inside the Python package at `cli_
 - **Agent-specific guidance** for JSON output, error handling, and programmatic use
 
 SKILL.md files are auto-generated during Phase 6.5 of the pipeline using `skill_generator.py`, which extracts metadata directly from the CLI's Click decorators, setup.py, and README. Because the file lives inside the package, it is installed alongside the CLI via `pip install` and auto-detected by the REPL banner — agents can read the absolute path displayed at startup.
+
+---
+
+## 🎬 Real-World Demos
+
+AI agents using generated CLIs to produce complete, useful artifacts — no GUI needed.
+
+### Draw.io &mdash; HTTPS Handshake Diagram
+
+> **Harness:** `cli-anything-drawio` | **Time:** ~4 min | **Artifact:** `.drawio` + `.png`
+
+An agent creates a full HTTPS connection lifecycle diagram from scratch — TCP three-way handshake, TLS negotiation, encrypted data exchange, and TCP four-way termination — entirely through CLI commands.
+
+<p align="center">
+  <img src="examples/drawio/drawio_demo.gif" alt="Draw.io CLI demo: building an HTTPS handshake diagram" width="720" />
+</p>
+
+<details>
+<summary>Final artifact</summary>
+<p align="center">
+  <img src="examples/drawio/https_handshake.png" alt="HTTPS handshake sequence diagram" width="600" />
+</p>
+</details>
+
+*Contributed by [@zhangxilong-43](https://github.com/zhangxilong-43)*
+
+### Slay the Spire II &mdash; Game Automation
+
+> **Harness:** `cli-anything-slay-the-spire-ii` | **Artifact:** Automated gameplay session
+
+An agent plays through a Slay the Spire II run using the CLI harness — reading game state, selecting cards, choosing paths, and making strategic decisions in real-time.
+
+<p align="center">
+  <img src="examples/slay_the_spire_ii/example_preview.gif" alt="Slay the Spire II CLI gameplay demo" width="720" />
+</p>
+
+*Contributed by [@TianyuFan0504](https://github.com/TianyuFan0504)*
+
+### VideoCaptioner &mdash; Auto-Generated Subtitles
+
+> **Harness:** `cli-anything-videocaptioner` | **Artifact:** Captioned video frames
+
+An agent uses the VideoCaptioner CLI to automatically generate and overlay styled subtitles onto video content, with bilingual text rendering and customizable formatting.
+
+<table align="center">
+<tr>
+<td align="center"><strong>Before</strong></td>
+<td align="center"><strong>After</strong></td>
+</tr>
+<tr>
+<td><img src="examples/videocaptioner/videocaptioner_before.png" alt="Video frame before captioning" width="380" /></td>
+<td><img src="examples/videocaptioner/videocaptioner_after.png" alt="Video frame after captioning" width="380" /></td>
+</tr>
+</table>
+
+*Contributed by [@WEIFENG2333](https://github.com/WEIFENG2333)*
+
+*More CLI demos coming soon.*
 
 ---
 
