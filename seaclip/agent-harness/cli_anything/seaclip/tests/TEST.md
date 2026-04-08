@@ -69,7 +69,6 @@ Tests requiring the live backend are skipped gracefully if localhost:5200 is unr
 ```
 ============================= test session starts ==============================
 platform darwin -- Python 3.14.3, pytest-9.0.2, pluggy-1.6.0
-rootdir: /Users/whitenoise-oc/projects/cli-anything-seaclip/agent-harness
 
 test_core.py     25 passed
 test_full_e2e.py 10 passed

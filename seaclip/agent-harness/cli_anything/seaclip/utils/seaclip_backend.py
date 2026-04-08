@@ -96,7 +96,7 @@ class SeaClipBackend:
                 "SEACLIP_DB environment variable is required for direct database queries. "
                 "Set it to the path of your SeaClip-Lite seaclip.db file."
             )
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
         conn.row_factory = sqlite3.Row
         try:
             rows = conn.execute(sql, params).fetchall()

@@ -12,9 +12,8 @@ Test suites for the PM2 CLI-Anything harness.
 ## Running Tests
 
 ```bash
-# Activate the CLI-Anything venv
-source /Users/whitenoise-oc/projects/CLI-Anything/.venv/bin/activate
-cd /Users/whitenoise-oc/projects/cli-anything-pm2/agent-harness
+cd agent-harness
+pip install -e .
 
 # All tests
 python -m pytest cli_anything/pm2/tests/ -v

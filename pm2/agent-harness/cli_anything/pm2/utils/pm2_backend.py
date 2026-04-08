@@ -10,6 +10,18 @@ import shutil
 import subprocess
 from typing import Any
 
+# Common directories where pm2 may be installed (Homebrew, global npm, system).
+_EXTRA_PATH_DIRS = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin"]
+
+
+def _augmented_path(base_path: str | None = None) -> str:
+    """Return PATH string with _EXTRA_PATH_DIRS prepended if missing."""
+    path = base_path if base_path is not None else os.environ.get("PATH", "")
+    for p in _EXTRA_PATH_DIRS:
+        if p not in path:
+            path = f"{p}:{path}"
+    return path
+
 
 def _find_pm2() -> str:
     """Locate the pm2 binary on the system.
@@ -22,13 +34,7 @@ def _find_pm2() -> str:
     Raises:
         RuntimeError: If pm2 is not found.
     """
-    extra_paths = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin"]
-    env_path = os.environ.get("PATH", "")
-    for p in extra_paths:
-        if p not in env_path:
-            env_path = f"{p}:{env_path}"
-
-    pm2_path = shutil.which("pm2", path=env_path)
+    pm2_path = shutil.which("pm2", path=_augmented_path())
     if pm2_path is None:
         raise RuntimeError(
             "pm2 not found on this system. "
@@ -52,9 +58,7 @@ def _get_pm2() -> str:
 def _build_env() -> dict[str, str]:
     """Build environment dict with proper PATH for subprocess."""
     env = os.environ.copy()
-    extra = "/opt/homebrew/bin:/usr/local/bin"
-    if extra not in env.get("PATH", ""):
-        env["PATH"] = f"{extra}:{env.get('PATH', '')}"
+    env["PATH"] = _augmented_path(env.get("PATH", ""))
     return env
 
 

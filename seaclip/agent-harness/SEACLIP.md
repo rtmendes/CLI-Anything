@@ -30,7 +30,7 @@ or undo/redo stack.
 ## Backend
 
 - **FastAPI** at `http://127.0.0.1:5200`
-- **SQLite** at `/Users/whitenoise-oc/shrirama/seaclip-lite/seaclip.db`
+- **SQLite** at the path specified by the `SEACLIP_DB` environment variable
 
 ## Install
 
@@ -120,7 +120,7 @@ cli-anything-seaclip
 
 ```bash
 cd agent-harness
-source /Users/whitenoise-oc/projects/CLI-Anything/.venv/bin/activate
+pip install -e .
 python -m pytest cli_anything/seaclip/tests/ -v
 ```
 

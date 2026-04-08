@@ -63,11 +63,7 @@ Skipped:
 ## Running Tests
 
 ```bash
-# Activate the CLI-Anything venv
-source /Users/whitenoise-oc/projects/CLI-Anything/.venv/bin/activate
-
-# Install the package in dev mode
-cd /Users/whitenoise-oc/projects/cli-anything-chromadb/agent-harness
+cd agent-harness
 pip install -e .
 
 # Run all tests
