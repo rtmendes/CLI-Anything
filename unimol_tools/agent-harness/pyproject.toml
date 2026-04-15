@@ -32,8 +32,10 @@ packages = [
     "cli_anything.unimol_tools.core",
     "cli_anything.unimol_tools.utils",
     "cli_anything.unimol_tools.tests",
-    "cli_anything.unimol_tools.skills",
 ]
 
 [tool.setuptools.package-dir]
 "cli_anything.unimol_tools" = "cli_anything/unimol_tools"
+
+[tool.setuptools.package-data]
+"cli_anything.unimol_tools" = ["*.md"]

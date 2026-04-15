@@ -1,14 +1,21 @@
 """Session management - REPL state and file locking"""
 
 import json
-import fcntl
 import os
 from typing import Optional, Dict, Any
+
+# Cross-platform file locking
+try:
+    import fcntl
+    HAS_FCNTL = True
+except ImportError:
+    # Windows fallback - no file locking
+    HAS_FCNTL = False
 
 
 def _locked_save_json(path: str, data: Dict[str, Any]):
     """
-    Atomically save JSON file with file lock
+    Atomically save JSON file with file lock (Unix) or atomic rename (Windows)
 
     Prevents concurrent write corruption
     """
@@ -17,16 +24,24 @@ def _locked_save_json(path: str, data: Dict[str, Any]):
         with open(path, 'w') as f:
             json.dump({}, f)
 
-    with open(path, "r+") as f:
-        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-        try:
-            f.seek(0)
-            f.truncate()
+    if HAS_FCNTL:
+        # Unix: use file locking
+        with open(path, "r+") as f:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            try:
+                f.seek(0)
+                f.truncate()
+                json.dump(data, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            finally:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+    else:
+        # Windows: use atomic rename
+        temp_path = path + '.tmp'
+        with open(temp_path, 'w') as f:
             json.dump(data, f, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
-        finally:
-            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        os.replace(temp_path, path)
 
 
 class UniMolSession:

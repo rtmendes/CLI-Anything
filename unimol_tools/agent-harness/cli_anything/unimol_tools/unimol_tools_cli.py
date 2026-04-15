@@ -1,6 +1,7 @@
 """CLI-Anything-Uni-Mol-Tools - Main CLI Entry Point"""
 
 import click
+import functools
 import json
 import sys
 import os
@@ -13,15 +14,21 @@ from .core import predict as predict_mod
 from .core import session as session_mod
 from .utils.repl_skin import ReplSkin
 
-# Global state
-_json_output = False
-_repl_mode = False
-_session: Optional[session_mod.UniMolSession] = None
+
+def get_json_mode(ctx=None):
+    """Get JSON mode from context"""
+    if ctx is None:
+        try:
+            ctx = click.get_current_context()
+        except RuntimeError:
+            return False
+    return ctx.obj.get("json_output", False) if ctx.obj else False
 
 
-def output(data):
+def output(data, ctx=None):
     """Unified output function"""
-    if _json_output:
+    use_json = get_json_mode(ctx)
+    if use_json:
         click.echo(json.dumps(data, indent=2))
     else:
         # Human-readable output
@@ -42,7 +49,15 @@ def output(data):
 
 def handle_error(func):
     """Error handling decorator"""
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
+        # Get context from args
+        ctx = None
+        for arg in args:
+            if isinstance(arg, click.Context):
+                ctx = arg
+                break
+
         try:
             return func(*args, **kwargs)
         except Exception as e:
@@ -51,11 +66,14 @@ def handle_error(func):
                 "error": str(e),
                 "type": type(e).__name__
             }
-            if _json_output:
+            use_json = get_json_mode(ctx) if ctx else False
+            repl_mode = ctx.obj.get("repl_mode", False) if ctx and ctx.obj else False
+
+            if use_json:
                 click.echo(json.dumps(error_data))
             else:
                 click.secho(f"Error: {e}", fg="red", err=True)
-            if not _repl_mode:
+            if not repl_mode:
                 sys.exit(1)
     return wrapper
 
@@ -77,8 +95,12 @@ def cli(ctx, use_json, project_path, weight_dir):
       export UNIMOL_WEIGHT_DIR=/path/to/weights
     Or use --weight-dir flag.
     """
-    global _json_output, _session
-    _json_output = use_json
+    # Initialize context object
+    if ctx.obj is None:
+        ctx.obj = {}
+
+    ctx.obj["json_output"] = use_json
+    ctx.obj["repl_mode"] = False
 
     # Set weight directory if provided
     if weight_dir:
@@ -89,8 +111,9 @@ def cli(ctx, use_json, project_path, weight_dir):
     # Load project if specified
     if project_path:
         try:
-            _session = session_mod.UniMolSession(project_path)
-            ctx.obj = {"session": _session, "project_path": project_path}
+            session = session_mod.UniMolSession(project_path)
+            ctx.obj["session"] = session
+            ctx.obj["project_path"] = project_path
         except Exception as e:
             if use_json:
                 click.echo(json.dumps({"error": f"Failed to load project: {e}"}))
@@ -98,11 +121,13 @@ def cli(ctx, use_json, project_path, weight_dir):
                 click.secho(f"Error loading project: {e}", fg="red", err=True)
             sys.exit(1)
     else:
-        ctx.obj = {"session": None, "project_path": None}
+        ctx.obj["session"] = None
+        ctx.obj["project_path"] = None
 
-    # If no command specified, show help
+    # If no command specified, enter REPL mode
     if ctx.invoked_subcommand is None:
-        click.echo(ctx.get_help())
+        ctx.obj["repl_mode"] = True
+        repl_cmd(ctx)
 
 
 # Project management commands
@@ -328,7 +353,7 @@ def storage_analysis(ctx):
     analysis = storage_mod.analyze_project_storage(proj)
 
     # Display results
-    if _json_output:
+    if get_json_mode():
         output(analysis)
     else:
         click.echo()
@@ -394,7 +419,7 @@ def models_rank(ctx):
     # Rank models
     ranked = models_mod.rank_models(proj)
 
-    if _json_output:
+    if get_json_mode():
         output({"models": ranked})
     else:
         if not ranked:
@@ -468,7 +493,7 @@ def models_history(ctx):
     # Get history
     history = models_mod.get_model_history(proj)
 
-    if _json_output:
+    if get_json_mode():
         output(history)
     else:
         if not history["timeline"]:
@@ -525,7 +550,7 @@ def models_best(ctx):
     # Get best model
     best = models_mod.get_best_model(proj)
 
-    if _json_output:
+    if get_json_mode():
         output(best if best else {"error": "No models found"})
     else:
         if not best:
@@ -567,7 +592,7 @@ def models_compare(ctx, run_id_1, run_id_2):
     # Compare models
     comparison = models_mod.compare_models(proj, [run_id_1, run_id_2])
 
-    if _json_output:
+    if get_json_mode():
         output(comparison)
     else:
         click.echo()
@@ -578,23 +603,38 @@ def models_compare(ctx, run_id_1, run_id_2):
         click.echo(f"Comparing: {run_id_1} vs {run_id_2}")
         click.echo()
 
+        # Show overall winner if available
+        overall_winner = comparison.get("overall_winner")
+        if overall_winner:
+            click.secho(f"Overall winner: {overall_winner}", fg="green")
+            click.echo()
+
         # Show metrics comparison
-        if "metrics" in comparison:
+        comparisons = comparison.get("comparisons")
+        if comparisons:
             click.secho("Metrics:", fg="yellow")
-            for metric, values in comparison["metrics"].items():
-                v1, v2 = values[run_id_1], values[run_id_2]
-                if v1 > v2:
-                    winner = f"{run_id_1} wins"
-                    v1_str = click.style(f"{v1:.4f}", fg="green")
-                    v2_str = f"{v2:.4f}"
-                elif v2 > v1:
-                    winner = f"{run_id_2} wins"
-                    v1_str = f"{v1:.4f}"
-                    v2_str = click.style(f"{v2:.4f}", fg="green")
+            for metric, data in comparisons.items():
+                values = data.get("values", {})
+                v1 = values.get(run_id_1)
+                v2 = values.get(run_id_2)
+
+                if isinstance(v1, (int, float)) and isinstance(v2, (int, float)):
+                    if v1 > v2:
+                        winner = f"{run_id_1} wins"
+                        v1_str = click.style(f"{v1:.4f}", fg="green")
+                        v2_str = f"{v2:.4f}"
+                    elif v2 > v1:
+                        winner = f"{run_id_2} wins"
+                        v1_str = f"{v1:.4f}"
+                        v2_str = click.style(f"{v2:.4f}", fg="green")
+                    else:
+                        winner = "tie"
+                        v1_str = f"{v1:.4f}"
+                        v2_str = f"{v2:.4f}"
                 else:
-                    winner = "tie"
-                    v1_str = f"{v1:.4f}"
-                    v2_str = f"{v2:.4f}"
+                    winner = "n/a"
+                    v1_str = str(v1) if v1 is not None else "N/A"
+                    v2_str = str(v2) if v2 is not None else "N/A"
 
                 click.echo(f"  {metric:12} {v1_str:12} vs {v2_str:12}  ({winner})")
 
@@ -625,7 +665,7 @@ def cleanup_models(ctx, auto, keep_best, min_auc):
     # Get suggestions
     suggestions = models_mod.suggest_deletable_models(proj, keep_best_n=keep_best, min_auc=min_auc)
 
-    if _json_output:
+    if get_json_mode():
         output(suggestions)
         return
 
@@ -682,10 +722,11 @@ def cleanup_models(ctx, auto, keep_best, min_auc):
             # Show results
             click.echo()
             click.secho("✓ Cleanup Complete!", fg="green", bold=True)
-            click.echo(f"  Deleted: {result['deleted_count']} models")
-            click.echo(f"  Archived: {result['archived_count']} models")
-            click.echo(f"  Failed: {result['failed_count']}")
-            click.echo(f"  Space freed: {storage_mod.format_size(result['total_space_freed'])}")
+            click.echo(f"  Deleted: {len(result.get('deleted', []))} models")
+            click.echo(f"  Archived: {len(result.get('archived', []))} models")
+            click.echo(f"  Failed: {len(result.get('failed', []))}")
+            space_freed_mb = result.get('space_freed_mb', 0)
+            click.echo(f"  Space freed: {storage_mod.format_size(space_freed_mb * 1024 * 1024)}")
 
     else:
         # Interactive mode
@@ -722,9 +763,10 @@ def cleanup_models(ctx, auto, keep_best, min_auc):
             # Show results
             click.echo()
             click.secho("✓ Cleanup Complete!", fg="green", bold=True)
-            click.echo(f"  Deleted: {result['deleted_count']} models")
-            click.echo(f"  Archived: {result['archived_count']} models")
-            click.echo(f"  Space freed: {storage_mod.format_size(result['total_space_freed'])}")
+            click.echo(f"  Deleted: {len(result.get('deleted', []))} models")
+            click.echo(f"  Archived: {len(result.get('archived', []))} models")
+            space_freed_mb = result.get('space_freed_mb', 0)
+            click.echo(f"  Space freed: {storage_mod.format_size(space_freed_mb * 1024 * 1024)}")
 
 
 @cli.command("archive")
@@ -740,7 +782,7 @@ def archive_command(ctx, action, run_id):
     if action == "list":
         archives = cleanup_mod.list_archives()
 
-        if _json_output:
+        if get_json_mode():
             output({"archives": archives})
         else:
             if not archives:
@@ -782,6 +824,24 @@ def archive_command(ctx, action, run_id):
             project_mod.save_project(session.project_path, proj)
 
         output(result)
+
+
+@cli.command("repl", hidden=True)
+@click.pass_context
+def repl_cmd(ctx):
+    """Enter interactive REPL mode"""
+    ctx.obj["repl_mode"] = True
+
+    # Create REPL skin
+    repl = ReplSkin(
+        cli_group=cli,
+        ctx=ctx,
+        prompt_prefix="unimol-tools",
+        intro_text="Welcome to Uni-Mol Tools CLI! Type 'help' for available commands.",
+    )
+
+    # Start REPL
+    repl.run()
 
 
 def main():
