@@ -1135,16 +1135,9 @@
       gap: 0.4rem;
       font-size: 0.78rem;
       color: var(--text-tertiary);
-      text-decoration: none;
       padding: 0.35rem 0.75rem;
       border: 1px solid var(--border);
       border-radius: 999px;
-      transition: border-color 0.15s, color 0.15s;
-    }
-
-    .footer-analytics-link:hover {
-      border-color: var(--text-tertiary);
-      color: var(--text-secondary);
     }
 
     .footer-analytics-link svg { opacity: 0.6; flex-shrink: 0; }
@@ -1376,7 +1369,7 @@
       Powered by <a href="https://github.com/HKUDS/CLI-Anything" target="_blank">CLI-Anything</a>
     </div>
     <div class="footer-stats">
-      <a class="footer-analytics-link" href="https://cloud.umami.is/share/mnilRgKH0oo7SJTs" target="_blank">
+      <div class="footer-analytics-link" aria-label="Traffic snapshot">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         <span class="stat-dot dot-total"></span>
         <span id="stat-total">&mdash;</span> visits
@@ -1386,7 +1379,7 @@
         <span class="analytics-sep">&middot;</span>
         <span class="stat-dot dot-agent"></span>
         <span id="stat-agent">&mdash;</span> AI agent
-      </a>
+      </div>
     </div>
   </footer>
 
@@ -2014,43 +2007,41 @@
       // ── Fetch all-time stats from Umami Cloud API (both sites) ──
       const UMAMI_API = 'https://api.umami.is/v1';
       const UMAMI_KEY = 'api_idAebMhzn6z0hsUQT7BSxRuCK2GUZvRY';
-      const WEBSITE_IDS = [
-        '07082d05-efd3-4f85-a7a1-b426b0e8bfaa', // hkuds.github.io
-        'a076c661-bed1-405c-a522-813794e688b4',  // clianything.cc
-      ];
+      const HKUDS_WEBSITE_ID = '07082d05-efd3-4f85-a7a1-b426b0e8bfaa';
+      const CC_WEBSITE_ID = 'a076c661-bed1-405c-a522-813794e688b4';
       const headers = { 'Accept': 'application/json', 'x-umami-api-key': UMAMI_KEY };
 
       async function loadVisitorStats() {
         try {
           const now = Date.now();
-          let totalVisits = 0, humanCount = 0;
+          let hkudsHumanVisits = 0;
+          let ccHumanVisits = 0;
+          let ccAgentVisits = 0;
 
-          // Fetch stats and events from both sites in parallel
-          const fetches = WEBSITE_IDS.flatMap(id => [
-            fetch(`${UMAMI_API}/websites/${id}/stats?startAt=0&endAt=${now}`, { headers }),
-            fetch(`${UMAMI_API}/websites/${id}/events/series?startAt=0&endAt=${now}&unit=year&timezone=UTC`, { headers })
+          const [hkudsStatsResp, ccEventsResp] = await Promise.all([
+            fetch(`${UMAMI_API}/websites/${HKUDS_WEBSITE_ID}/stats?startAt=0&endAt=${now}`, { headers }),
+            fetch(`${UMAMI_API}/websites/${CC_WEBSITE_ID}/events/series?startAt=0&endAt=${now}&unit=year&timezone=UTC`, { headers })
           ]);
-          const [statsResp1, eventsResp1, statsResp2, eventsResp2] = await Promise.all(fetches);
 
-          for (const resp of [statsResp1, statsResp2]) {
-            if (resp.ok) {
-              const stats = await resp.json();
-              totalVisits += stats.visits ?? 0;
-            }
+          if (hkudsStatsResp.ok) {
+            const stats = await hkudsStatsResp.json();
+            hkudsHumanVisits = stats.visits ?? 0;
           }
 
-          for (const resp of [eventsResp1, eventsResp2]) {
-            if (resp.ok) {
-              const events = await resp.json();
-              events.forEach(e => {
-                if (e.x === 'visit-human') humanCount += e.y || 0;
-              });
-            }
+          if (ccEventsResp.ok) {
+            const events = await ccEventsResp.json();
+            events.forEach(e => {
+              if (e.x === 'visit-human') ccHumanVisits += e.y || 0;
+              if (e.x === 'visit-agent') ccAgentVisits += e.y || 0;
+            });
           }
+
+          const humanCount = hkudsHumanVisits + ccHumanVisits;
+          const totalVisits = humanCount + ccAgentVisits;
 
           document.getElementById('stat-total').textContent = totalVisits.toLocaleString();
           document.getElementById('stat-human').textContent = humanCount.toLocaleString();
-          document.getElementById('stat-agent').textContent = Math.max(0, totalVisits - humanCount).toLocaleString();
+          document.getElementById('stat-agent').textContent = ccAgentVisits.toLocaleString();
         } catch (_) {
           // Stats not available — leave dashes
         }
