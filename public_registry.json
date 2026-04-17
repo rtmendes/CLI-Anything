@@ -238,6 +238,25 @@
           "url": "https://obsidian.md"
         }
       ]
+    },
+    {
+      "name": "py4csr",
+      "display_name": "TraceCSR / Py4CSR CLI",
+      "version": "latest",
+      "description": "GxP-compliant agent harness for CDISC Clinical Study Report (CSR) and Tables/Figures/Listings (TFL) generation",
+      "category": "data-science",
+      "requires": "Python >= 3.10",
+      "homepage": "https://github.com/yanmingyu92/py4csr",
+      "source_url": "https://github.com/yanmingyu92/py4csr",
+      "package_manager": "pip",
+      "install_cmd": "pip install py4csr",
+      "entry_point": "tracecsr",
+      "contributors": [
+        {
+          "name": "yanmingyu92",
+          "url": "https://github.com/yanmingyu92"
+        }
+      ]
     }
   ]
 }
