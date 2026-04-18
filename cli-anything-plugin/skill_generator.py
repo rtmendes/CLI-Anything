@@ -24,7 +24,9 @@ def _format_display_name(name: str) -> str:
 
 def _canonical_skill_name(harness_path: Path, software_name: str) -> str:
     """Return the repo-root canonical skill id for a harness."""
-    software_dir = harness_path.parent.name if harness_path.parent.name else software_name
+    software_dir = software_name
+    if harness_path.name == "agent-harness" and harness_path.parent.name:
+        software_dir = harness_path.parent.name
     return f"cli-anything-{software_dir.replace('_', '-')}"
 
 
@@ -121,7 +123,12 @@ def extract_cli_metadata(harness_path: str) -> SkillMetadata:
 
     # Build skill name and description
     skill_name = _canonical_skill_name(harness_path, software_name)
-    skill_description = f"Command-line interface for {_format_display_name(software_name)} - {skill_intro[:100]}..."
+    if skill_intro:
+        intro_snippet = skill_intro[:100]
+        suffix = "..." if len(skill_intro) > 100 else ""
+        skill_description = f"Command-line interface for {_format_display_name(software_name)} - {intro_snippet}{suffix}"
+    else:
+        skill_description = f"Command-line interface for {_format_display_name(software_name)}"
 
     return SkillMetadata(
         skill_name=skill_name,
@@ -165,14 +172,16 @@ def extract_system_package(content: str) -> Optional[str]:
     patterns = [
         r"`apt install ([\w\-]+)`",
         r"`brew install ([\w\-]+)`",
-        r"apt-get install ([\w\-]+)",
+        r"`apt-get install ([\w\-]+)`",
     ]
 
     for pattern in patterns:
         match = re.search(pattern, content)
         if match:
             package = match.group(1)
-            if "apt" in pattern:
+            if "apt-get" in pattern:
+                return f"apt-get install {package}"
+            elif "apt" in pattern:
                 return f"apt install {package}"
             elif "brew" in pattern:
                 return f"brew install {package}"

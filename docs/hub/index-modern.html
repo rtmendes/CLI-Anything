@@ -258,6 +258,21 @@
       flex-shrink: 0;
     }
 
+    .nav-link-stars {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.9rem;
+      padding: 0.14rem 0.52rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      font-size: 0.73rem;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+
     .theme-toggle {
       width: 42px;
       padding: 0;
@@ -1334,17 +1349,13 @@
     }
 
     .card-command-block {
-      padding: 0.9rem;
+      padding: 0.9rem 0.9rem 0.9rem 0.9rem;
       border-radius: 18px;
       border: 1px solid var(--border);
       background:
         linear-gradient(180deg, rgba(93, 168, 255, 0.07), rgba(255,255,255,0.02)),
         rgba(0,0,0,0.14);
-    }
-
-    .card-command-stack {
-      display: grid;
-      gap: 0.75rem;
+      position: relative;
     }
 
     .card--public .card-command-block {
@@ -1370,15 +1381,32 @@
       font-size: 0.8rem;
       color: var(--text);
       white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-      line-height: 1.6;
+      overflow-wrap: break-word;
+      word-break: normal;
+      line-height: 1.45;
+      padding-top: 0.1rem;
+    }
+
+    .card-command-comment {
+      display: block;
+      color: var(--text-tertiary);
+      font-style: italic;
+      margin-bottom: 0.24rem;
+      padding-right: 5.2rem;
+    }
+
+    .card-command-line {
+      display: block;
+    }
+
+    .card-command-line + .card-command-comment {
+      margin-top: 0.42rem;
     }
 
     .card-command-actions {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 0.7rem;
+      position: absolute;
+      top: 0.96rem;
+      right: 0.9rem;
     }
 
     .card-install-note {
@@ -1490,15 +1518,13 @@
     }
 
     .footer-copy a,
-    .footer-brand a,
-    .footer-analytics-link {
+    .footer-brand a {
       color: var(--text);
       text-decoration: none;
     }
 
     .footer-copy a:hover,
-    .footer-brand a:hover,
-    .footer-analytics-link:hover {
+    .footer-brand a:hover {
       text-decoration: underline;
     }
 
@@ -1769,6 +1795,7 @@
         <a class="nav-link" href="https://github.com/HKUDS/CLI-Anything" target="_blank">
           <svg viewBox="0 0 98 96" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6C29.304 70.25 17.9 66.013 17.9 47.02c0-5.52 1.94-10.046 5.127-13.58-.486-1.302-2.264-6.437.486-13.34 0 0 4.206-1.302 13.59 5.216 3.963-1.14 8.17-1.628 12.34-1.628 4.17 0 8.376.568 12.34 1.628 9.384-6.518 13.59-5.216 13.59-5.216 2.75 6.903.972 12.038.486 13.34 3.268 3.534 5.127 8.06 5.127 13.58 0 19.074-11.485 23.15-22.328 24.29 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"/></svg>
           GitHub
+          <span class="nav-link-stars" data-github-stars aria-label="GitHub star count">--</span>
         </a>
         <a class="nav-link" href="https://github.com/HKUDS/CLI-Anything/blob/main/CONTRIBUTING.md" target="_blank">Contribute</a>
         <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
@@ -2002,7 +2029,7 @@
       </div>
       <div class="footer-stats">
         <div class="footer-label">Traffic Snapshot</div>
-        <a class="footer-analytics-link" href="https://cloud.umami.is/share/mnilRgKH0oo7SJTs" target="_blank">
+        <div class="footer-analytics-link" aria-label="Traffic snapshot">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           <span class="stat-dot dot-total"></span>
           <span id="stat-total">&mdash;</span> visits
@@ -2012,7 +2039,7 @@
           <span class="analytics-sep">&middot;</span>
           <span class="stat-dot dot-agent"></span>
           <span id="stat-agent">&mdash;</span> AI agent
-        </a>
+        </div>
       </div>
     </footer>
   </div>
@@ -2044,6 +2071,7 @@
     });
 
     const REPO = 'https://github.com/HKUDS/CLI-Anything';
+    const GITHUB_REPO_API = 'https://api.github.com/repos/HKUDS/CLI-Anything';
     const REPO_SKILLS_SOURCE = 'HKUDS/CLI-Anything';
     const REGISTRY_URLS = [
       '../../registry.json',
@@ -2083,6 +2111,34 @@
         }
       }
       return null;
+    }
+
+    function formatCompactCount(value) {
+      return new Intl.NumberFormat('en', {
+        notation: 'compact',
+        maximumFractionDigits: value >= 10000 ? 0 : 1,
+      }).format(value);
+    }
+
+    async function loadGitHubStars() {
+      try {
+        const resp = await fetch(GITHUB_REPO_API, {
+          headers: { Accept: 'application/vnd.github+json' }
+        });
+        if (!resp.ok) return;
+
+        const repo = await resp.json();
+        const stars = repo.stargazers_count;
+        if (typeof stars !== 'number') return;
+
+        document.querySelectorAll('[data-github-stars]').forEach((el) => {
+          el.textContent = formatCompactCount(stars);
+          el.setAttribute('aria-label', stars.toLocaleString('en-US') + ' GitHub stars');
+          el.title = stars.toLocaleString('en-US') + ' GitHub stars';
+        });
+      } catch (_) {
+        // Keep fallback placeholder when GitHub API is unavailable.
+      }
     }
 
     async function loadRegistries() {
@@ -2324,13 +2380,17 @@
     }
 
     function renderCommandStack(steps, sourceLabel) {
-      return '<div class="card-command-stack">' + steps.map((step) =>
-        '<div class="card-command-block">' +
-          '<div class="card-command-label"><span>' + esc(step.label) + '</span><span>' + esc(step.badge || sourceLabel) + '</span></div>' +
-          '<div class="card-command">' + esc(step.cmd) + '</div>' +
-          '<div class="card-command-actions"><button class="card-copy-btn" onclick="copyCmd(this, \'' + esc(step.cmd) + '\')">Copy</button></div>' +
-        '</div>'
-      ).join('') + '</div>';
+      const display = steps.map((step) =>
+        '<span class="card-command-comment"># ' + esc(step.label.toLowerCase()) + '</span><span class="card-command-line">' + esc(step.cmd) + '</span>'
+      ).join('');
+      const copyText = steps.map((step) =>
+        '# ' + step.label.toLowerCase() + '\n' + step.cmd
+      ).join('\n');
+      return '<div class="card-command-block">' +
+        '<div class="card-command-label"><span>Install Commands</span><span>' + esc(sourceLabel) + '</span></div>' +
+        '<div class="card-command">' + display + '</div>' +
+        '<div class="card-command-actions"><button class="card-copy-btn" onclick=\'copyCmd(this, ' + JSON.stringify(copyText) + ')'>Copy</button></div>' +
+      '</div>';
     }
 
     function renderHarnessCard(c) {
@@ -2357,10 +2417,10 @@
       const dateHtml = c.last_modified ? '<div class="card-date">Updated ' + esc(c.last_modified) + '</div>' : '';
       const linksHtml = sourceLink + (skillLink ? skillLink : '');
       const installSteps = [
-        { label: 'Step 1 · Install CLI', cmd: 'cli-hub install ' + c.name, badge: 'CLI-Hub' }
+        { label: 'step 1 · install cli', cmd: 'cli-hub install ' + c.name, badge: 'CLI-Hub' }
       ];
       const skillCmd = harnessSkillCmd(c);
-      if (skillCmd) installSteps.push({ label: 'Step 2 · Install Skill', cmd: skillCmd, badge: 'npx skills' });
+      if (skillCmd) installSteps.push({ label: 'step 2 · install skill', cmd: skillCmd, badge: 'npx skills' });
       const installBlock = renderCommandStack(installSteps, 'CLI-Hub');
 
       return `
@@ -2419,9 +2479,9 @@
       const installNotesHtml = c.install_notes ? '<div class="card-npx">' + esc(c.install_notes) + '</div>' : '';
       const installSteps = isBundled
         ? []
-        : [{ label: 'Step 1 · Install CLI', cmd: 'cli-hub install ' + c.name, badge: 'CLI-Hub' }];
+        : [{ label: 'step 1 · install cli', cmd: 'cli-hub install ' + c.name, badge: 'CLI-Hub' }];
       const skillCmd = publicSkillCmd(c);
-      if (skillCmd) installSteps.push({ label: 'Step 2 · Install Skill', cmd: skillCmd, badge: 'npx skills' });
+      if (skillCmd) installSteps.push({ label: 'step 2 · install skill', cmd: skillCmd, badge: 'npx skills' });
       const installBlock = isBundled
         ? '<div class="card-install-note">Bundled with the upstream application. Install or update the parent app and enable its CLI integration.</div>'
         : renderCommandStack(installSteps, 'Source aware');
@@ -2555,48 +2615,47 @@
 
       const UMAMI_API = 'https://api.umami.is/v1';
       const UMAMI_KEY = 'api_idAebMhzn6z0hsUQT7BSxRuCK2GUZvRY';
-      const WEBSITE_IDS = [
-        '07082d05-efd3-4f85-a7a1-b426b0e8bfaa',
-        'a076c661-bed1-405c-a522-813794e688b4',
-      ];
+      const HKUDS_WEBSITE_ID = '07082d05-efd3-4f85-a7a1-b426b0e8bfaa';
+      const CC_WEBSITE_ID = 'a076c661-bed1-405c-a522-813794e688b4';
       const headers = { Accept: 'application/json', 'x-umami-api-key': UMAMI_KEY };
 
       async function loadVisitorStats() {
         try {
           const now = Date.now();
-          let totalVisits = 0;
-          let humanCount = 0;
-          const fetches = WEBSITE_IDS.flatMap((id) => [
-            fetch(UMAMI_API + '/websites/' + id + '/stats?startAt=0&endAt=' + now, { headers }),
-            fetch(UMAMI_API + '/websites/' + id + '/events/series?startAt=0&endAt=' + now + '&unit=year&timezone=UTC', { headers })
+          let hkudsHumanVisits = 0;
+          let ccHumanVisits = 0;
+          let ccAgentVisits = 0;
+          const [hkudsStatsResp, ccEventsResp] = await Promise.all([
+            fetch(UMAMI_API + '/websites/' + HKUDS_WEBSITE_ID + '/stats?startAt=0&endAt=' + now, { headers }),
+            fetch(UMAMI_API + '/websites/' + CC_WEBSITE_ID + '/events/series?startAt=0&endAt=' + now + '&unit=year&timezone=UTC', { headers })
           ]);
-          const [statsResp1, eventsResp1, statsResp2, eventsResp2] = await Promise.all(fetches);
 
-          for (const resp of [statsResp1, statsResp2]) {
-            if (resp.ok) {
-              const stats = await resp.json();
-              totalVisits += stats.visits ?? 0;
-            }
+          if (hkudsStatsResp.ok) {
+            const stats = await hkudsStatsResp.json();
+            hkudsHumanVisits = stats.visits ?? 0;
           }
 
-          for (const resp of [eventsResp1, eventsResp2]) {
-            if (resp.ok) {
-              const events = await resp.json();
-              events.forEach((e) => {
-                if (e.x === 'visit-human') humanCount += e.y || 0;
-              });
-            }
+          if (ccEventsResp.ok) {
+            const events = await ccEventsResp.json();
+            events.forEach((e) => {
+              if (e.x === 'visit-human') ccHumanVisits += e.y || 0;
+              if (e.x === 'visit-agent') ccAgentVisits += e.y || 0;
+            });
           }
+
+          const humanCount = hkudsHumanVisits + ccHumanVisits;
+          const totalVisits = humanCount + ccAgentVisits;
 
           document.getElementById('stat-total').textContent = totalVisits.toLocaleString();
           document.getElementById('stat-human').textContent = humanCount.toLocaleString();
-          document.getElementById('stat-agent').textContent = Math.max(0, totalVisits - humanCount).toLocaleString();
+          document.getElementById('stat-agent').textContent = ccAgentVisits.toLocaleString();
         } catch (_) {
           // Leave fallback dashes.
         }
       }
 
       loadVisitorStats();
+      loadGitHubStars();
     })();
   </script>
 </body>
