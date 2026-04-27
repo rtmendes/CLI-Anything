@@ -2087,37 +2087,37 @@
         <div class="analytics-report-grid">
           <article class="analytics-stat">
             <span class="analytics-stat-label">Website visits</span>
-            <strong id="stat-total" class="analytics-stat-value">21,123</strong>
+            <strong id="stat-total" class="analytics-stat-value">...</strong>
             <div class="analytics-bar" aria-hidden="true">
-              <span class="bar-human" id="bar-site-human" style="width: 36.4%"></span>
-              <span class="bar-agent" id="bar-site-agent" style="width: 63.6%"></span>
+              <span class="bar-human" id="bar-site-human" style="width: 0%"></span>
+              <span class="bar-agent" id="bar-site-agent" style="width: 0%"></span>
             </div>
             <dl class="analytics-split">
               <div class="analytics-split-item">
                 <dt><span class="analytics-dot human"></span>Human</dt>
-                <dd><span id="stat-human" class="analytics-split-num">7,689</span><span id="pct-site-human" class="analytics-split-pct">36%</span></dd>
+                <dd><span id="stat-human" class="analytics-split-num">...</span><span id="pct-site-human" class="analytics-split-pct">...</span></dd>
               </div>
               <div class="analytics-split-item">
                 <dt><span class="analytics-dot agent"></span>Agent</dt>
-                <dd><span id="stat-agent" class="analytics-split-num">13,434</span><span id="pct-site-agent" class="analytics-split-pct">64%</span></dd>
+                <dd><span id="stat-agent" class="analytics-split-num">...</span><span id="pct-site-agent" class="analytics-split-pct">...</span></dd>
               </div>
             </dl>
           </article>
           <article class="analytics-stat">
-            <span class="analytics-stat-label">CLI-Hub calls</span>
-            <strong id="stat-cli-total" class="analytics-stat-value">16,361</strong>
+            <span class="analytics-stat-label">CLI-Hub usage</span>
+            <strong id="stat-cli-total" class="analytics-stat-value">...</strong>
             <div class="analytics-bar" aria-hidden="true">
-              <span class="bar-human" id="bar-cli-human" style="width: 19.8%"></span>
-              <span class="bar-agent" id="bar-cli-agent" style="width: 80.2%"></span>
+              <span class="bar-human" id="bar-cli-human" style="width: 0%"></span>
+              <span class="bar-agent" id="bar-cli-agent" style="width: 0%"></span>
             </div>
             <dl class="analytics-split">
               <div class="analytics-split-item">
                 <dt><span class="analytics-dot human"></span>Human</dt>
-                <dd><span id="stat-cli-human" class="analytics-split-num">3,237</span><span id="pct-cli-human" class="analytics-split-pct">20%</span></dd>
+                <dd><span id="stat-cli-human" class="analytics-split-num">...</span><span id="pct-cli-human" class="analytics-split-pct">...</span></dd>
               </div>
               <div class="analytics-split-item">
                 <dt><span class="analytics-dot agent"></span>Agent</dt>
-                <dd><span id="stat-cli-agent" class="analytics-split-num">13,124</span><span id="pct-cli-agent" class="analytics-split-pct">80%</span></dd>
+                <dd><span id="stat-cli-agent" class="analytics-split-num">...</span><span id="pct-cli-agent" class="analytics-split-pct">...</span></dd>
               </div>
             </dl>
           </article>
@@ -2827,13 +2827,11 @@
       const ANALYTICS_PROVIDER = 'posthog';
       const ANALYTICS_SITE = 'clianything.cc';
       const COUNTED_HOSTS = new Set(['clianything.cc', 'www.clianything.cc']);
-      const BASELINE_STATS = {
-        total: 21123,
-        human: 7689,
-        agent: 13434,
-        cli_hub_total: 16361,
-        cli_hub_human: 3237,
-        cli_hub_agent: 13124,
+      // Fixed Umami baseline from remote main. Runtime PostHog counts are
+      // queried live and added to this.
+      const UMAMI_BASELINE_STATS = {
+        human: 7689, agent: 13434,
+        cli_hub_human: 3237, cli_hub_agent: 13124,
       };
       const ANALYTICS_TEST_RUN = new URLSearchParams(location.search).get('analytics_test_run') || '';
       const POSTHOG_CONFIG = {
@@ -3123,80 +3121,73 @@
         document.addEventListener(evt, onHumanInteraction, { once: false, passive: true });
       });
 
-      // ── Live analytics (PostHog HogQL) ──
-      // Read-only personal API key, scoped to `query:read` on project 393992 only.
-      // See https://us.posthog.com/settings/user-api-keys — create a scoped key
-      // and paste it below. The Umami baseline is fixed at the migration cutover
-      // and PostHog counts are added on top of it.
-      const POSTHOG_READONLY_KEY = 'phx_FizBjpYkycqd7b9UC2ZebHNhze6gn8T9SmUv5uG8dXXLepHj';
-      const POSTHOG_QUERY_HOST = 'https://us.posthog.com';
-      const POSTHOG_QUERY_PROJECT_ID = '393992';
-      const MIGRATION_STARTED_AT = '2026-04-23T09:06:38Z';
+      // ── Live analytics via Cloudflare Worker proxy ──
+      // PostHog personal key lives as a Worker secret (repo:
+      // ~/clianything-analytics-worker). Runtime PostHog counts are queried
+      // every refresh and added to the fixed pre-migration Umami baseline.
+      const ANALYTICS_PROXY_URL = 'https://analytics.clianything.cc/';
       const LIVE_STATS_REFRESH_MS = 60_000;
+      const ZERO_STATS = {
+        human: 0, agent: 0,
+        cli_hub_human: 0, cli_hub_agent: 0,
+      };
 
-      async function fetchPosthogIncrement() {
-        if (!POSTHOG_READONLY_KEY || POSTHOG_READONLY_KEY.indexOf('REPLACE') !== -1) {
-          throw new Error('posthog readonly key not configured');
-        }
+      async function fetchPosthogTotals() {
         const hogql = (
           "select " +
           "countIf(event = 'visit-human' and properties.source = 'web' and properties.site = 'clianything.cc') as human, " +
           "countIf(event = 'visit-agent' and properties.source = 'web' and properties.site = 'clianything.cc') as agent, " +
           "countIf(event = 'cli-hub call' and properties.source = 'cli' and properties.channel = 'cli-hub' and properties.is_agent = false) as cli_hub_human, " +
           "countIf(event = 'cli-hub call' and properties.source = 'cli' and properties.channel = 'cli-hub' and properties.is_agent = true) as cli_hub_agent " +
-          "from events " +
-          "where timestamp >= parseDateTimeBestEffort('" + MIGRATION_STARTED_AT + "')"
+          "from events"
         );
-        const response = await fetch(POSTHOG_QUERY_HOST + '/api/projects/' + POSTHOG_QUERY_PROJECT_ID + '/query/', {
+        const response = await fetch(ANALYTICS_PROXY_URL, {
           method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + POSTHOG_READONLY_KEY,
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query: { kind: 'HogQLQuery', query: hogql } }),
         });
         if (!response.ok) throw new Error('posthog query http ' + response.status);
         const data = await response.json();
         const row = (data.results && data.results[0]) || [0, 0, 0, 0];
-        const human = Number(row[0]) || 0;
-        const agent = Number(row[1]) || 0;
-        const cliHuman = Number(row[2]) || 0;
-        const cliAgent = Number(row[3]) || 0;
         return {
-          total: human + agent,
-          human,
-          agent,
-          cli_hub_total: cliHuman + cliAgent,
-          cli_hub_human: cliHuman,
-          cli_hub_agent: cliAgent,
+          human: Number(row[0]) || 0,
+          agent: Number(row[1]) || 0,
+          cli_hub_human: Number(row[2]) || 0,
+          cli_hub_agent: Number(row[3]) || 0,
         };
       }
 
-      function mergeStats(baseline, increment) {
+      function sumStats(a, b) {
+        const out = {};
+        for (const key of Object.keys(ZERO_STATS)) out[key] = (a[key] || 0) + (b[key] || 0);
+        return out;
+      }
+
+      function withDerivedTotals(s) {
+        // cli-hub call is emitted once per invocation, so action events like
+        // install/launch must not be added here or usage would be double-counted.
         return {
-          total: baseline.total + increment.total,
-          human: baseline.human + increment.human,
-          agent: baseline.agent + increment.agent,
-          cli_hub_total: baseline.cli_hub_total + increment.cli_hub_total,
-          cli_hub_human: baseline.cli_hub_human + increment.cli_hub_human,
-          cli_hub_agent: baseline.cli_hub_agent + increment.cli_hub_agent,
+          ...s,
+          total: s.human + s.agent,
+          cli_hub_total: s.cli_hub_human + s.cli_hub_agent,
         };
+      }
+
+      function hasAnyStats(s) {
+        return Object.keys(ZERO_STATS).some((key) => (s[key] || 0) > 0);
       }
 
       async function refreshVisitorStats() {
-        try {
-          const increment = await fetchPosthogIncrement();
-          applyVisitorStats(mergeStats(BASELINE_STATS, increment));
-          return true;
-        } catch (_) {
-          return false;
-        }
+        const posthog = await fetchPosthogTotals();
+        const merged = sumStats(UMAMI_BASELINE_STATS, posthog);
+        if (!hasAnyStats(merged)) return false;
+        applyVisitorStats(withDerivedTotals(merged));
+        return true;
       }
 
       async function loadVisitorStats() {
-        applyVisitorStats(BASELINE_STATS);
-        await refreshVisitorStats();
-        setInterval(refreshVisitorStats, LIVE_STATS_REFRESH_MS);
+        await refreshVisitorStats().catch(() => false);
+        setInterval(() => { refreshVisitorStats().catch(() => false); }, LIVE_STATS_REFRESH_MS);
       }
 
       loadVisitorStats();
