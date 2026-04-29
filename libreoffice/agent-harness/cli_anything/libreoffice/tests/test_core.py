@@ -8,6 +8,7 @@ import os
 import sys
 import tempfile
 import shutil
+import zipfile
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -35,6 +36,7 @@ from cli_anything.libreoffice.core.styles import (
 from cli_anything.libreoffice.core.session import Session
 from cli_anything.libreoffice.core.export import to_odt, to_ods, to_odp
 from cli_anything.libreoffice.core import importer as importer_mod
+from cli_anything.libreoffice.utils.odf_utils import parse_odf
 
 
 # ── Document Tests ───────────────────────────────────────────────
@@ -186,6 +188,25 @@ class TestImport:
         assert imported["sheets"][0]["cells"]["B1"]["value"] == 42.0
         assert imported["sheets"][0]["cells"]["B1"]["type"] == "float"
 
+    def test_import_calc_formula_normalizes_odf_prefix(self):
+        proj = create_document(doc_type="calc", name="formula_calc")
+        set_cell(proj, "A1", "1", cell_type="float")
+        set_cell(proj, "A2", "2", cell_type="float")
+        set_cell(proj, "A3", "0", cell_type="float", formula="=A1+A2")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            source = os.path.join(tmp, "formula.ods")
+            roundtrip = os.path.join(tmp, "roundtrip.ods")
+            to_ods(proj, source)
+            imported = importer_mod.import_document(source)
+            to_ods(imported, roundtrip)
+            content_xml = parse_odf(roundtrip)["content_xml"]
+
+        formula = imported["sheets"][0]["cells"]["A3"]["formula"]
+        assert formula == "=A1+A2"
+        assert 'table:formula="of:=A1+A2"' in content_xml
+        assert "of:of:=" not in content_xml
+
     def test_import_impress_odp(self):
         proj = create_document(doc_type="impress", name="import_impress")
         add_slide(proj, title="Intro", content="Welcome")
@@ -245,6 +266,25 @@ class TestImport:
                 importer_mod.import_document(path)
         finally:
             os.unlink(path)
+
+    def test_reject_malformed_odf_meta_xml(self):
+        proj = create_document(doc_type="writer")
+        add_paragraph(proj, text="body")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            source = os.path.join(tmp, "source.odt")
+            malformed = os.path.join(tmp, "malformed.odt")
+            to_odt(proj, source)
+
+            with zipfile.ZipFile(source, "r") as zin, zipfile.ZipFile(malformed, "w") as zout:
+                for info in zin.infolist():
+                    data = zin.read(info.filename)
+                    if info.filename == "meta.xml":
+                        data = b"<broken>"
+                    zout.writestr(info, data)
+
+            with pytest.raises(ValueError, match="Invalid ODF meta.xml"):
+                importer_mod.import_document(malformed)
 
 
 # ── Writer Tests ─────────────────────────────────────────────────

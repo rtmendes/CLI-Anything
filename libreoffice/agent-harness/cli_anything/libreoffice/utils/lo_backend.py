@@ -14,6 +14,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+from pathlib import Path
 from typing import Optional
 
 
@@ -112,20 +113,26 @@ def convert(
             tempfile.TemporaryDirectory(prefix="lo-runtime-") as runtime_dir, \
             tempfile.TemporaryDirectory(prefix="lo-config-") as config_dir, \
             tempfile.TemporaryDirectory(prefix="lo-cache-") as cache_dir:
-        os.chmod(runtime_dir, 0o700)
         env = os.environ.copy()
-        env.update({
-            "XDG_RUNTIME_DIR": runtime_dir,
-            "XDG_CONFIG_HOME": config_dir,
-            "XDG_CACHE_HOME": cache_dir,
-        })
+        if os.name == "posix":
+            try:
+                os.chmod(runtime_dir, 0o700)
+            except OSError:
+                pass
+            env.update({
+                "XDG_RUNTIME_DIR": runtime_dir,
+                "XDG_CONFIG_HOME": config_dir,
+                "XDG_CACHE_HOME": cache_dir,
+            })
+
+        profile_uri = Path(profile_dir).resolve().as_uri()
 
         cmd = [
             lo,
             "--headless",
             "--nologo",
             "--nofirststartwizard",
-            f"-env:UserInstallation=file://{profile_dir}",
+            f"-env:UserInstallation={profile_uri}",
             "--convert-to", output_format,
             "--outdir", output_dir,
             input_path,

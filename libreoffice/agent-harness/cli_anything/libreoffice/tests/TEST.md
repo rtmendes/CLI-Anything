@@ -4,9 +4,9 @@
 
 | File | Test Classes | Test Count | Focus |
 |------|-------------|------------|-------|
-| `test_core.py` | 7 | 97 | Unit tests for document, import, Writer, Calc, Impress, styles, session |
+| `test_core.py` | 7 | 99 | Unit tests for document, import, Writer, Calc, Impress, styles, session |
 | `test_full_e2e.py` | 17 | 73 | E2E workflows: ODF ZIP structure, XML validity, import, export formats, CLI subprocess |
-| **Total** | **24** | **170** | |
+| **Total** | **24** | **172** | |
 
 ## Unit Tests (`test_core.py`)
 
@@ -23,14 +23,16 @@ All unit tests use synthetic/in-memory data only. No LibreOffice installation re
 - List available profiles
 - Metadata populated on creation (title, created date)
 
-### TestImport (7 tests)
+### TestImport (9 tests)
 - List supported import formats, including ODF and Microsoft Office extensions
 - Import generated ODT into Writer project content
 - Import generated ODS into Calc sheets and cells
+- Normalize imported Calc formulas before re-export
 - Import generated ODP into Impress slides
 - Route DOCX import through LibreOffice conversion without requiring LibreOffice in unit tests
 - Reject unsupported import formats
 - Reject invalid ODF files with a clean error
+- Reject malformed ODF meta.xml with a clean error
 
 ### TestWriter (18 tests)
 - Add paragraph with default and custom style
@@ -171,6 +173,6 @@ E2E tests produce real ODF files (ODT/ODS/ODP) and validate ZIP structure, XML c
 ## Test Results
 
 ```
-test_core.py: 97 passed in 0.15s
+test_core.py: 99 passed in 0.15s
 test_full_e2e.py: 73 passed in 58.33s
 ```

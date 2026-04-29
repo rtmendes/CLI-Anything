@@ -156,7 +156,11 @@ def _apply_metadata(project: Dict[str, Any], meta_xml: str, source_path: str) ->
     if not meta_xml:
         return
 
-    root = ET.fromstring(meta_xml)
+    try:
+        root = ET.fromstring(meta_xml)
+    except ET.ParseError as e:
+        raise ValueError(f"Invalid ODF meta.xml in: {source_path}") from e
+
     mappings = {
         "title": ("dc", "title"),
         "author": ("dc", "creator"),
@@ -295,7 +299,7 @@ def _parse_calc_row(row_elem: ET.Element, row_index: int) -> Dict[str, Dict[str,
 
 def _cell_data(cell_elem: ET.Element) -> Optional[Dict[str, Any]]:
     value_type = _attr(cell_elem, "office", "value-type") or "string"
-    formula = _attr(cell_elem, "table", "formula")
+    formula = _normalize_formula(_attr(cell_elem, "table", "formula"))
     text = _text_content(cell_elem)
     numeric_value = _attr(cell_elem, "office", "value")
 
@@ -320,6 +324,16 @@ def _cell_data(cell_elem: ET.Element) -> Optional[Dict[str, Any]]:
     if formula:
         data["formula"] = formula
     return data
+
+
+def _normalize_formula(formula: Optional[str]) -> Optional[str]:
+    """Strip ODF formula namespace prefixes before storing project state."""
+    if formula is None:
+        return None
+    for prefix in ("of:", "oooc:"):
+        if formula.startswith(prefix):
+            return formula[len(prefix):]
+    return formula
 
 
 def _parse_impress_content(root: ET.Element) -> List[Dict[str, Any]]:
